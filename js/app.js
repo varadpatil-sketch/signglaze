@@ -685,4 +685,49 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ==========================================================================
+  // 8. PARKING, ROAD & TRAFFIC SAFETY CATEGORY FILTERING & RFQ TRIGGER
+  // ==========================================================================
+  const trafficFilterBtns = document.querySelectorAll('.traffic-filter-btn');
+  const trafficCards = document.querySelectorAll('.traffic-card');
+
+  trafficFilterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      trafficFilterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const filterCat = btn.dataset.trafficFilter;
+      trafficCards.forEach(card => {
+        if (filterCat === 'all' || card.dataset.trafficCat === filterCat) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  });
+
+  // Traffic product "Request Quote" buttons auto-populate contact form
+  document.querySelectorAll('.traffic-card .rfq-trigger-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const productName = btn.dataset.product || 'Traffic Safety Product';
+      const contactSection = document.getElementById('contact');
+      if (contactSection) {
+        contactSection.scrollIntoView({ behavior: 'smooth' });
+      }
+
+      const signageCategory = document.getElementById('signageCategory');
+      if (signageCategory) {
+        signageCategory.value = 'Parking, Road & Traffic Safety Products';
+      }
+
+      const projectMessage = document.getElementById('projectMessage');
+      if (projectMessage) {
+        projectMessage.value = `Enquiry for ${productName}:\nPlease provide pricing quotation, technical data sheet, minimum order quantity, and delivery timeline for our site.`;
+        projectMessage.focus();
+      }
+    });
+  });
+
 });
+
