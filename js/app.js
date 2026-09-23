@@ -474,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const filter = btn.dataset.filter;
 
       portfolioItems.forEach(item => {
-        if (filter === 'all' || item.dataset.category === filter) {
+        if (filter === 'all' || (item.dataset.category && item.dataset.category.includes(filter))) {
           item.style.display = 'block';
         } else {
           item.style.display = 'none';
@@ -728,6 +728,76 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  // ==========================================================================
+  // 12. BHIM UPI PAYMENT CLIPBOARD & ACTIONS
+  // ==========================================================================
+  const btnCopyUpi = document.getElementById('btnCopyUpi');
+  const copyUpiLabel = document.getElementById('copyUpiLabel');
+  const upiIdText = document.getElementById('upiIdText');
+
+  if (btnCopyUpi && upiIdText) {
+    btnCopyUpi.addEventListener('click', () => {
+      const upiId = upiIdText.textContent.trim();
+      const onCopied = () => {
+        if (copyUpiLabel) {
+          copyUpiLabel.textContent = '✓ Copied!';
+          btnCopyUpi.style.borderColor = '#22c55e';
+          btnCopyUpi.style.color = '#22c55e';
+          setTimeout(() => {
+            copyUpiLabel.textContent = '📋 Copy UPI ID';
+            btnCopyUpi.style.borderColor = '';
+            btnCopyUpi.style.color = '';
+          }, 2500);
+        }
+      };
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(upiId).then(onCopied).catch(() => {
+          fallbackCopy(upiId, onCopied);
+        });
+      } else {
+        fallbackCopy(upiId, onCopied);
+      }
+    });
+  }
+
+  function fallbackCopy(text, callback) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand('copy');
+      if (callback) callback();
+    } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  // Mobile Navigation Drawer Toggle
+  const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+  const navLinksList = document.querySelector('.nav-links');
+  if (mobileMenuBtn && navLinksList) {
+    mobileMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      navLinksList.classList.toggle('nav-open');
+    });
+
+    navLinksList.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => {
+        navLinksList.classList.remove('nav-open');
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!navLinksList.contains(e.target) && e.target !== mobileMenuBtn) {
+        navLinksList.classList.remove('nav-open');
+      }
+    });
+  }
 
 });
 
