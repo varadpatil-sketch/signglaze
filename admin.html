@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SGT Admin Leads Dashboard | Sign Glaze Technology</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --brand-red: #e63946;
+      --brand-orange: #ff6b35;
+      --bg-dark: #090d16;
+      --bg-surface: #111827;
+      --bg-card: #1e293b;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      padding: 1.5rem;
+      min-height: 100vh;
+    }
+
+    .admin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .badge {
+      background: linear-gradient(135deg, var(--brand-red), #b81d2c);
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 1.25rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+    }
+
+    .title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1rem;
+      border-radius: var(--radius);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: 1px solid var(--border-color);
+      background: var(--bg-surface);
+      color: var(--text-main);
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      border-color: var(--brand-orange);
+      color: var(--brand-orange);
+    }
+
+    .btn-primary {
+      background: var(--brand-red);
+      color: #fff;
+      border-color: var(--brand-red);
+    }
+
+    .btn-primary:hover {
+      background: #c1121f;
+      color: #fff;
+    }
+
+    /* KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .kpi-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .kpi-num {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-top: 0.25rem;
+    }
+
+    .kpi-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    /* Controls Bar */
+    .controls-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .search-input {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: #fff;
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      width: 320px;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: var(--brand-red);
+    }
+
+    .status-filters {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-tab {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .filter-tab.active {
+      background: var(--brand-red);
+      color: #fff;
+      border-color: var(--brand-red);
+    }
+
+    /* Leads Table */
+    .table-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+
+    th {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 1rem;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: top;
+    }
+
+    tr:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .lead-id-pill {
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #38bdf8;
+      font-weight: bold;
+    }
+
+    .client-name {
+      font-weight: 700;
+      color: #fff;
+      font-size: 0.95rem;
+    }
+
+    .client-company {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .contact-links {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.35rem;
+    }
+
+    .contact-link {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .link-wa {
+      background: rgba(37, 211, 102, 0.15);
+      color: #25d366;
+      border: 1px solid rgba(37, 211, 102, 0.3);
+    }
+
+    .link-call {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .status-select {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: #fff;
+      padding: 0.35rem 0.65rem;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .badge-status {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    .status-pending { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    .status-quoted { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+    .status-in_fab { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+    .status-installed { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+
+    .file-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-color);
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      color: #38bdf8;
+      text-decoration: none;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .file-badge:hover {
+      background: rgba(56, 189, 248, 0.2);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="admin-header">
+    <div class="brand-wrap">
+      <div class="badge">SGT</div>
+      <div>
+        <h1 class="title">Sign Glaze Technology — Leads Management</h1>
+        <p class="subtitle">Real-time Pipeline &amp; RFQ Inquiries • Thane (W)</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <a href="/" class="btn" target="_blank">🌐 View Website</a>
+      <a href="/api/admin/export" class="btn btn-primary" id="btnExportCsv">📥 Export CSV</a>
+      <button class="btn" id="btnRefresh">🔄 Refresh</button>
+    </div>
+  </header>
+
+  <!-- KPI Overview -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <span class="kpi-label">Total Inquiries</span>
+      <span class="kpi-num" id="kpiTotal">0</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">Surveys Pending</span>
+      <span class="kpi-num" id="kpiPending" style="color: #f59e0b;">0</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">Quoted / In Review</span>
+      <span class="kpi-num" id="kpiQuoted" style="color: #38bdf8;">0</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">In MS &amp; ACP Fabrication</span>
+      <span class="kpi-num" id="kpiInFab" style="color: #c084fc;">0</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">Completed &amp; Installed</span>
+      <span class="kpi-num" id="kpiInstalled" style="color: #22c55e;">0</span>
+    </div>
+  </div>
+
+  <!-- Search & Filter Controls -->
+  <div class="controls-bar">
+    <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search by name, phone, company, ID...">
+    
+    <div class="status-filters" id="statusFilterBar">
+      <button class="filter-tab active" data-status="all">All Leads</button>
+      <button class="filter-tab" data-status="New / Pending Survey">New / Pending Survey</button>
+      <button class="filter-tab" data-status="Quoted">Quoted</button>
+      <button class="filter-tab" data-status="In Fabrication">In Fabrication</button>
+      <button class="filter-tab" data-status="Installed / Closed">Installed</button>
+    </div>
+  </div>
+
+  <!-- Leads Table -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Reference &amp; Date</th>
+          <th>Client &amp; Contact</th>
+          <th>Requirement / Specs</th>
+          <th>Dimensions &amp; Budget</th>
+          <th>Artwork File</th>
+          <th>Status &amp; Action</th>
+        </tr>
+      </thead>
+      <tbody id="leadsTableBody">
+        <tr>
+          <td colspan="6" class="empty-state">Loading leads from database...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    let currentFilter = 'all';
+    let currentSearch = '';
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/admin/stats');
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('kpiTotal').textContent = data.stats.total || 0;
+          document.getElementById('kpiPending').textContent = data.stats.pendingSurvey || 0;
+          document.getElementById('kpiQuoted').textContent = data.stats.quoted || 0;
+          document.getElementById('kpiInFab').textContent = data.stats.inFab || 0;
+          document.getElementById('kpiInstalled').textContent = data.stats.installed || 0;
+        }
+      } catch (err) {
+        console.error('Error fetching stats:', err);
+      }
+    }
+
+    async function loadLeads() {
+      try {
+        let url = `/api/admin/leads?status=${encodeURIComponent(currentFilter)}`;
+        if (currentSearch) {
+          url += `&search=${encodeURIComponent(currentSearch)}`;
+        }
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        const tbody = document.getElementById('leadsTableBody');
+        if (!data.success || !data.leads || data.leads.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No inquiries found matching current filters.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = data.leads.map(lead => {
+          const cleanPhone = (lead.phone || '').replace(/[^0-9]/g, '');
+          const waUrl = `https://wa.me/91${cleanPhone}?text=Hello%20${encodeURIComponent(lead.name)},%20this%20is%20Sign%20Glaze%20Technology%20regarding%20your%20signage%20inquiry%20[${lead.lead_id}].`;
+
+          return `
+            <tr>
+              <td>
+                <span class="lead-id-pill">${lead.lead_id}</span>
+                <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem;">
+                  ${new Date(lead.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </div>
+                <div style="font-size: 0.72rem; text-transform: uppercase; color: #ff6b35; margin-top: 0.2rem;">
+                  Src: ${lead.source.replace('_', ' ')}
+                </div>
+              </td>
+              <td>
+                <div class="client-name">${escapeHtml(lead.name)}</div>
+                <div class="client-company">${escapeHtml(lead.company || 'Direct Client')}</div>
+                <div style="font-size: 0.8rem; color: #cbd5e1; margin-top: 0.25rem;">${escapeHtml(lead.email || '')}</div>
+                <div class="contact-links">
+                  <a href="tel:${lead.phone}" class="contact-link link-call">📞 Call</a>
+                  <a href="${waUrl}" target="_blank" rel="noopener" class="contact-link link-wa">💬 WhatsApp</a>
+                </div>
+              </td>
+              <td>
+                <strong>${escapeHtml(lead.sign_type || 'Custom Signage')}</strong>
+                ${lead.illumination ? `<div style="font-size: 0.8rem; color: #94a3b8;">Light: ${escapeHtml(lead.illumination)}</div>` : ''}
+                ${lead.mounting_surface ? `<div style="font-size: 0.8rem; color: #94a3b8;">Mount: ${escapeHtml(lead.mounting_surface)}</div>` : ''}
+                ${lead.custom_text ? `<div style="font-size: 0.8rem; color: #ffb703; font-family: monospace;">Text: "${escapeHtml(lead.custom_text)}"</div>` : ''}
+                ${lead.location ? `<div style="font-size: 0.8rem; color: #cbd5e1; margin-top: 0.25rem;">📍 ${escapeHtml(lead.location)}</div>` : ''}
+              </td>
+              <td>
+                <div>${escapeHtml(lead.dimensions || 'Survey Required')}</div>
+                ${lead.area_sqft ? `<div style="font-size: 0.8rem; color: #94a3b8;">${lead.area_sqft} Sq. Ft.</div>` : ''}
+                <div style="color: #4ade80; font-weight: 700; margin-top: 0.25rem;">
+                  ${escapeHtml(lead.estimated_budget || 'Pending Quote')}
+                </div>
+              </td>
+              <td>
+                ${lead.artwork_filename ? `
+                  <a href="/uploads/${encodeURIComponent(lead.artwork_filename)}" target="_blank" class="file-badge" title="View / Download Artwork">
+                    📁 ${escapeHtml(lead.artwork_originalname || 'View File')}
+                  </a>
+                ` : `<span style="color: #64748b; font-size: 0.8rem;">No file uploaded</span>`}
+              </td>
+              <td>
+                <select class="status-select" onchange="updateStatus(${lead.id}, this.value)">
+                  <option value="New / Pending Survey" ${lead.status === 'New / Pending Survey' ? 'selected' : ''}>New / Pending Survey</option>
+                  <option value="Quoted" ${lead.status === 'Quoted' ? 'selected' : ''}>Quoted</option>
+                  <option value="In Fabrication" ${lead.status === 'In Fabrication' ? 'selected' : ''}>In Fabrication</option>
+                  <option value="Installed / Closed" ${lead.status === 'Installed / Closed' ? 'selected' : ''}>Installed / Closed</option>
+                  <option value="Cancelled" ${lead.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                </select>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Error loading leads:', err);
+      }
+    }
+
+    async function updateStatus(id, newStatus) {
+      try {
+        const res = await fetch(`/api/admin/leads/${id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        const data = await res.json();
+        if (data.success) {
+          loadStats();
+        }
+      } catch (err) {
+        alert('Failed to update status. Check server connection.');
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // Filter tabs listener
+    document.querySelectorAll('#statusFilterBar .filter-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('#statusFilterBar .filter-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentFilter = tab.dataset.status;
+        loadLeads();
+      });
+    });
+
+    // Search input listener
+    let searchTimeout;
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        currentSearch = e.target.value.trim();
+        loadLeads();
+      }, 300);
+    });
+
+    document.getElementById('btnRefresh').addEventListener('click', () => {
+      loadStats();
+      loadLeads();
+    });
+
+    // Initial Load
+    loadStats();
+    loadLeads();
+  </script>
+</body>
+</html>
