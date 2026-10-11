@@ -47,17 +47,29 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static frontend files
+// Serve static frontend files (prefers public directory, falls back to root)
+const publicDir = path.join(__dirname, 'public');
+if (fs.existsSync(publicDir)) {
+  app.use(express.static(publicDir));
+}
 app.use(express.static(__dirname));
 app.use('/uploads', express.static(uploadsDir));
 
 // Route for Home Page
 app.get('/', (req, res) => {
+  const publicIndex = path.join(publicDir, 'index.html');
+  if (fs.existsSync(publicIndex)) {
+    return res.sendFile(publicIndex);
+  }
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Route for Admin Dashboard
 app.get('/admin', (req, res) => {
+  const publicAdmin = path.join(publicDir, 'admin.html');
+  if (fs.existsSync(publicAdmin)) {
+    return res.sendFile(publicAdmin);
+  }
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
