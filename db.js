@@ -1,41 +1,81 @@
-const Database = require('better-sqlite3');
+const { createClient } = require('@libsql/client');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
+require('dotenv').config();
 
-const dbPath = path.join(__dirname, 'data', 'signglaze.db');
-const db = new Database(dbPath);
+// Determine database connection target
+let dbUrl;
+let dbAuthToken = process.env.TURSO_AUTH_TOKEN || undefined;
 
-// Enable WAL mode for high performance
-db.pragma('journal_mode = WAL');
+if (process.env.TURSO_DATABASE_URL) {
+  // 1. Turso Cloud Database (Primary persistent storage on Vercel)
+  dbUrl = process.env.TURSO_DATABASE_URL;
+} else if (process.env.VERCEL) {
+  // 2. Serverless fallback if Turso is not yet configured
+  const tmpDb = path.join(os.tmpdir(), 'signglaze.db').replace(/\\/g, '/');
+  dbUrl = `file:${tmpDb}`;
+} else {
+  // 3. Local Development: data/signglaze.db
+  const dataDir = path.join(__dirname, 'data');
+  if (!fs.existsSync(dataDir)) {
+    try {
+      fs.mkdirSync(dataDir, { recursive: true });
+    } catch (e) {
+      console.warn('[DB] Could not create data directory:', e.message);
+    }
+  }
+  const dbFile = path.join(dataDir, 'signglaze.db').replace(/\\/g, '/');
+  dbUrl = `file:${dbFile}`;
+}
 
-// Initialize database schema
-db.exec(`
-  CREATE TABLE IF NOT EXISTS leads (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    lead_id TEXT UNIQUE,
-    name TEXT NOT NULL,
-    phone TEXT NOT NULL,
-    email TEXT,
-    company TEXT,
-    source TEXT DEFAULT 'quote_form',
-    sign_type TEXT,
-    dimensions TEXT,
-    area_sqft REAL,
-    illumination TEXT,
-    mounting_surface TEXT,
-    custom_text TEXT,
-    estimated_budget TEXT,
-    location TEXT,
-    notes TEXT,
-    artwork_filename TEXT,
-    artwork_originalname TEXT,
-    artwork_mimetype TEXT,
-    artwork_size INTEGER,
-    status TEXT DEFAULT 'New / Pending Survey',
-    admin_notes TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-`);
+const client = createClient({
+  url: dbUrl,
+  authToken: dbAuthToken
+});
+
+let isInitialized = false;
+
+/**
+ * Initialize database schema
+ */
+async function initDb() {
+  if (isInitialized) return;
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS leads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      lead_id TEXT UNIQUE,
+      name TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      email TEXT,
+      company TEXT,
+      source TEXT DEFAULT 'quote_form',
+      sign_type TEXT,
+      dimensions TEXT,
+      area_sqft REAL,
+      illumination TEXT,
+      mounting_surface TEXT,
+      custom_text TEXT,
+      estimated_budget TEXT,
+      location TEXT,
+      notes TEXT,
+      artwork_filename TEXT,
+      artwork_originalname TEXT,
+      artwork_mimetype TEXT,
+      artwork_size INTEGER,
+      status TEXT DEFAULT 'New / Pending Survey',
+      admin_notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  isInitialized = true;
+}
+
+// Auto-trigger schema creation
+initDb().catch(err => console.error('[DB INIT ERROR]', err));
 
 /**
  * Generate human-readable Lead Reference: SGT-YYYYMMDD-XXXX
@@ -47,11 +87,13 @@ function generateLeadId() {
 }
 
 /**
- * Insert a new lead into SQLite
+ * Insert a new lead into SQLite / Turso
  */
-function createLead(data) {
+async function createLead(data) {
+  await initDb();
   const leadId = data.lead_id || generateLeadId();
-  const stmt = db.prepare(`
+
+  const insertSql = `
     INSERT INTO leads (
       lead_id, name, phone, email, company, source, sign_type,
       dimensions, area_sqft, illumination, mounting_surface,
@@ -59,43 +101,45 @@ function createLead(data) {
       artwork_filename, artwork_originalname, artwork_mimetype, artwork_size,
       status
     ) VALUES (
-      @lead_id, @name, @phone, @email, @company, @source, @sign_type,
-      @dimensions, @area_sqft, @illumination, @mounting_surface,
-      @custom_text, @estimated_budget, @location, @notes,
-      @artwork_filename, @artwork_originalname, @artwork_mimetype, @artwork_size,
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
       'New / Pending Survey'
     )
-  `);
+  `;
 
-  const info = stmt.run({
-    lead_id: leadId,
-    name: data.name || '',
-    phone: data.phone || '',
-    email: data.email || '',
-    company: data.company || '',
-    source: data.source || 'quote_form',
-    sign_type: data.sign_type || '',
-    dimensions: data.dimensions || '',
-    area_sqft: data.area_sqft ? parseFloat(data.area_sqft) : null,
-    illumination: data.illumination || '',
-    mounting_surface: data.mounting_surface || '',
-    custom_text: data.custom_text || '',
-    estimated_budget: data.estimated_budget || '',
-    location: data.location || '',
-    notes: data.notes || '',
-    artwork_filename: data.artwork_filename || null,
-    artwork_originalname: data.artwork_originalname || null,
-    artwork_mimetype: data.artwork_mimetype || null,
-    artwork_size: data.artwork_size || null
+  const info = await client.execute({
+    sql: insertSql,
+    args: [
+      leadId,
+      data.name || '',
+      data.phone || '',
+      data.email || '',
+      data.company || '',
+      data.source || 'quote_form',
+      data.sign_type || '',
+      data.dimensions || '',
+      data.area_sqft ? parseFloat(data.area_sqft) : null,
+      data.illumination || '',
+      data.mounting_surface || '',
+      data.custom_text || '',
+      data.estimated_budget || '',
+      data.location || '',
+      data.notes || '',
+      data.artwork_filename || null,
+      data.artwork_originalname || null,
+      data.artwork_mimetype || null,
+      data.artwork_size || null
+    ]
   });
 
-  return getLeadById(info.lastInsertRowid);
+  const insertedId = Number(info.lastInsertRowid);
+  return await getLeadById(insertedId);
 }
 
 /**
  * Retrieve all leads with optional filtering and search
  */
-function getAllLeads(filterStatus, searchQuery) {
+async function getAllLeads(filterStatus, searchQuery) {
+  await initDb();
   let query = `SELECT * FROM leads`;
   const params = [];
   const conditions = [];
@@ -117,52 +161,63 @@ function getAllLeads(filterStatus, searchQuery) {
 
   query += ` ORDER BY id DESC`;
 
-  return db.prepare(query).all(...params);
+  const result = await client.execute({ sql: query, args: params });
+  return result.rows;
 }
 
 /**
  * Get single lead by ID
  */
-function getLeadById(id) {
-  return db.prepare(`SELECT * FROM leads WHERE id = ?`).get(id);
+async function getLeadById(id) {
+  await initDb();
+  const result = await client.execute({
+    sql: `SELECT * FROM leads WHERE id = ?`,
+    args: [id]
+  });
+  return result.rows[0] || null;
 }
 
 /**
  * Update status & notes of a lead
  */
-function updateLeadStatus(id, status, adminNotes) {
-  const stmt = db.prepare(`
-    UPDATE leads 
-    SET status = ?, 
-        admin_notes = COALESCE(?, admin_notes),
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `);
-  stmt.run(status, adminNotes || null, id);
-  return getLeadById(id);
+async function updateLeadStatus(id, status, adminNotes) {
+  await initDb();
+  await client.execute({
+    sql: `
+      UPDATE leads 
+      SET status = ?, 
+          admin_notes = COALESCE(?, admin_notes),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `,
+    args: [status, adminNotes || null, id]
+  });
+  return await getLeadById(id);
 }
 
 /**
  * Pipeline statistics for admin dashboard
  */
-function getLeadStats() {
-  const total = db.prepare(`SELECT COUNT(*) as count FROM leads`).get().count;
-  const pendingSurvey = db.prepare(`SELECT COUNT(*) as count FROM leads WHERE status = 'New / Pending Survey'`).get().count;
-  const quoted = db.prepare(`SELECT COUNT(*) as count FROM leads WHERE status = 'Quoted'`).get().count;
-  const inFab = db.prepare(`SELECT COUNT(*) as count FROM leads WHERE status = 'In Fabrication'`).get().count;
-  const installed = db.prepare(`SELECT COUNT(*) as count FROM leads WHERE status = 'Installed / Closed'`).get().count;
+async function getLeadStats() {
+  await initDb();
+  const totalRes = await client.execute(`SELECT COUNT(*) as count FROM leads`);
+  const pendingSurveyRes = await client.execute(`SELECT COUNT(*) as count FROM leads WHERE status = 'New / Pending Survey'`);
+  const quotedRes = await client.execute(`SELECT COUNT(*) as count FROM leads WHERE status = 'Quoted'`);
+  const inFabRes = await client.execute(`SELECT COUNT(*) as count FROM leads WHERE status = 'In Fabrication'`);
+  const installedRes = await client.execute(`SELECT COUNT(*) as count FROM leads WHERE status = 'Installed / Closed'`);
 
   return {
-    total,
-    pendingSurvey,
-    quoted,
-    inFab,
-    installed
+    total: Number(totalRes.rows[0]?.count || 0),
+    pendingSurvey: Number(pendingSurveyRes.rows[0]?.count || 0),
+    quoted: Number(quotedRes.rows[0]?.count || 0),
+    inFab: Number(inFabRes.rows[0]?.count || 0),
+    installed: Number(installedRes.rows[0]?.count || 0)
   };
 }
 
 module.exports = {
-  db,
+  client,
+  initDb,
   createLead,
   getAllLeads,
   getLeadById,

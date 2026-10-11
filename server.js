@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const os = require('os');
 const { createLead, getAllLeads, getLeadById, updateLeadStatus, getLeadStats } = require('./db');
 const { sendLeadNotifications } = require('./mailer');
 require('dotenv').config();
@@ -10,10 +11,17 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, 'uploads');
+// Ensure uploads directory exists (uses os.tmpdir() on Vercel's read-only filesystem)
+const uploadsDir = process.env.VERCEL
+  ? path.join(os.tmpdir(), 'uploads')
+  : path.join(__dirname, 'uploads');
+
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+  try {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  } catch (err) {
+    console.warn('[STORAGE] Could not create uploads directory:', err.message);
+  }
 }
 
 // Multer Storage Configuration
@@ -78,7 +86,7 @@ app.post('/api/leads', upload.single('artwork'), async (req, res) => {
       artwork_size: req.file.size
     } : {};
 
-    const newLead = createLead({
+    const newLead = await createLead({
       name,
       phone,
       email,
@@ -118,10 +126,10 @@ app.post('/api/leads', upload.single('artwork'), async (req, res) => {
 /**
  * GET /api/admin/leads - Retrieve leads with optional filter & search
  */
-app.get('/api/admin/leads', (req, res) => {
+app.get('/api/admin/leads', async (req, res) => {
   try {
     const { status, search } = req.query;
-    const leads = getAllLeads(status, search);
+    const leads = await getAllLeads(status, search);
     return res.json({ success: true, leads });
   } catch (error) {
     console.error('[GET LEADS ERROR]', error);
@@ -132,9 +140,9 @@ app.get('/api/admin/leads', (req, res) => {
 /**
  * GET /api/admin/stats - Retrieve pipeline summary statistics
  */
-app.get('/api/admin/stats', (req, res) => {
+app.get('/api/admin/stats', async (req, res) => {
   try {
-    const stats = getLeadStats();
+    const stats = await getLeadStats();
     return res.json({ success: true, stats });
   } catch (error) {
     console.error('[GET STATS ERROR]', error);
@@ -145,7 +153,7 @@ app.get('/api/admin/stats', (req, res) => {
 /**
  * PATCH /api/admin/leads/:id/status - Update lead status & admin notes
  */
-app.patch('/api/admin/leads/:id/status', (req, res) => {
+app.patch('/api/admin/leads/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
     const { status, admin_notes } = req.body;
@@ -154,7 +162,7 @@ app.patch('/api/admin/leads/:id/status', (req, res) => {
       return res.status(400).json({ success: false, error: 'Status is required.' });
     }
 
-    const updated = updateLeadStatus(id, status, admin_notes);
+    const updated = await updateLeadStatus(id, status, admin_notes);
     return res.json({ success: true, lead: updated });
   } catch (error) {
     console.error('[UPDATE LEAD STATUS ERROR]', error);
@@ -165,9 +173,9 @@ app.patch('/api/admin/leads/:id/status', (req, res) => {
 /**
  * GET /api/admin/export - Export leads to downloadable CSV
  */
-app.get('/api/admin/export', (req, res) => {
+app.get('/api/admin/export', async (req, res) => {
   try {
-    const leads = getAllLeads('all');
+    const leads = await getAllLeads('all');
     
     // CSV Header
     const headers = [
@@ -216,13 +224,16 @@ app.get('/api/admin/export', (req, res) => {
   }
 });
 
-// Start Express Server
-app.listen(PORT, () => {
-  console.log(`=======================================================`);
-  console.log(`🚀 SIGN GLAZE TECHNOLOGY (SGT) SERVER IS LIVE`);
-  console.log(`📍 Web Application: http://localhost:${PORT}`);
-  console.log(`🛡️  Admin Dashboard: http://localhost:${PORT}/admin`);
-  console.log(`📁 Uploads Directory: ${uploadsDir}`);
-  console.log(`💾 SQLite Database: ${path.join(__dirname, 'data', 'signglaze.db')}`);
-  console.log(`=======================================================`);
-});
+// Start Express Server (only if not running inside Vercel serverless functions)
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`=======================================================`);
+    console.log(`🚀 SIGN GLAZE TECHNOLOGY (SGT) SERVER IS LIVE`);
+    console.log(`📍 Web Application: http://localhost:${PORT}`);
+    console.log(`🛡️  Admin Dashboard: http://localhost:${PORT}/admin`);
+    console.log(`📁 Uploads Directory: ${uploadsDir}`);
+    console.log(`=======================================================`);
+  });
+}
+
+module.exports = app;

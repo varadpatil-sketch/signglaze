@@ -2537,3 +2537,70 @@ body.night-mode .cred-number {
   border-radius: var(--radius-sm);
   color: #e2e8f0;
 }
+
+/* ==========================================================================
+   MINIMALIST APPLE-STYLE SCROLL ANIMATION & REVEAL SYSTEM
+   ========================================================================== */
+.scroll-progress-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2.5px;
+  width: 0%;
+  background: linear-gradient(90deg, #e63946, #f77f00, #00f0ff);
+  box-shadow: 0 0 10px rgba(230, 57, 70, 0.5);
+  transition: width 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 110;
+  pointer-events: none;
+}
+
+/* Minimalist Apple-style Blur-to-Focus & Vertical Lift */
+.apple-reveal {
+  opacity: 0;
+  transform: translateY(30px) scale(0.985);
+  filter: blur(8px);
+  transition: 
+    opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform, filter;
+}
+
+.apple-reveal.is-revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+}
+
+/* Staggered card grid items */
+.stagger-item {
+  opacity: 0;
+  transform: translateY(26px) scale(0.985);
+  filter: blur(6px);
+  transition: 
+    opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform, filter;
+}
+
+.stagger-item.is-revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+}
+
+/* Accessibility: gracefully disable for users with reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .apple-reveal,
+  .stagger-item {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+  .scroll-progress-line {
+    display: none !important;
+  }
+}
+

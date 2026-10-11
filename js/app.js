@@ -799,5 +799,64 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ==========================================================================
+  // MINIMALIST APPLE-STYLE SCROLL REVEAL & PROGRESS ANIMATION
+  // ==========================================================================
+  const progressLine = document.getElementById('scrollProgressLine');
+  if (progressLine) {
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollTop = window.scrollY || document.documentElement.scrollTop;
+          const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+          const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+          progressLine.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }, { passive: true });
+  }
+
+  if ('IntersectionObserver' in window) {
+    const revealObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-revealed');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, {
+      root: null,
+      threshold: 0.08,
+      rootMargin: '0px 0px -40px 0px'
+    });
+
+    // 1. Group grids for smooth staggered micro-delays
+    const cardGrids = document.querySelectorAll(
+      '.catalog-grid, .portfolio-grid, .traffic-grid, .hero-stats'
+    );
+    cardGrids.forEach((grid) => {
+      const items = Array.from(grid.children);
+      items.forEach((item, idx) => {
+        item.classList.add('stagger-item');
+        item.style.transitionDelay = `${(idx % 4) * 0.09}s`;
+        revealObserver.observe(item);
+      });
+    });
+
+    // 2. Individual section headers and focal showcase containers
+    const revealTargets = document.querySelectorAll(
+      '.section-header, .payment-grid > div, .estimator-card, .estimator-sidebar, .contact-info-card, .contact-form-card, .hero-sign-showcase'
+    );
+    revealTargets.forEach((el) => {
+      if (!el.classList.contains('stagger-item')) {
+        el.classList.add('apple-reveal');
+        revealObserver.observe(el);
+      }
+    });
+  }
+
 });
 
