@@ -119,7 +119,7 @@ async function sendLeadNotifications(lead, uploadedFile) {
         </table>
 
         <div style="background: #f8fafc; padding: 15px; border-radius: 6px; text-align: center; margin-top: 15px;">
-          <a href="http://localhost:3000/admin" style="background: #0f172a; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; display: inline-block;">
+          <a href="${process.env.APP_URL || (process.env.VERCEL ? 'https://www.signglaze.in/admin' : 'http://localhost:3000/admin')}" style="background: #0f172a; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; display: inline-block;">
             Open SGT Admin Dashboard →
           </a>
         </div>
